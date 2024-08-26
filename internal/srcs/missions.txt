@@ -1,0 +1,23 @@
+1.
+    {[4, 4], "first": 6, "second": 3},
+    {[6, 6], "first": 10, "second": 6},
+    {[2, 2, 2, 2], "first": 8, "second": 4},
+    {[3, 3, 3], "first": 8, "second": 4},
+    {[5, 5], "first": 8, "second": 4},
+    {[1, 1, 1, 1, 1, 1], "first": 8, "second": 4},
+
+2.
+    {[3, 3, 4], "first": 12, "second": 7},
+    {[3, 6], "first": 8, "second": 4},
+    {[4, 1, 1, 1], "first": 9, "second": 5},
+    {[1, 1, 1, 6], "first": 11, "second": 6},
+    {[5, 2, 2], "first": 10, "second": 6},
+    {[4, 5], "first": 9, "second": 5},
+
+3. 
+    {[3, 4], "first": 7, "second": 3},
+    {[1, 2, 2, 3], "first": 11, "second": 6},
+    {[1, 4, 5], "first": 13, "second": 7},
+    {[2, 5], "first": 7, "second": 3},
+    {[1, 2, 6], "first": 12, "second": 7},
+    {[2, 3, 5], "first": 13, "second": 7},
