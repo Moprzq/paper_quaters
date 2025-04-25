@@ -107,4 +107,5 @@ func printTurn(missons cards.GameMissons, deck cards.GameDeck, turn int, msg str
 	if msg != "" {
 		fmt.Println(msg)
 	}
+	fmt.Println("\nSpace - Next trun, 1,2,3 - close mission\nR - shuffle deck, B - move back\nN - new game, ESC - quit game")
 }
