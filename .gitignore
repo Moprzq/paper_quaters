@@ -1,0 +1,7 @@
+paper_quarters.exe
+paper_quartiers.exe
+serve.exe
+dist/
+web/paper_quarters.wasm
+web/paper_quartiers.wasm
+web/wasm_exec.js

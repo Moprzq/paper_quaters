@@ -1,12 +1,74 @@
-Игра бумажные кварталы
+# Paper Quarters
 
-Делаем основной функционал главного поля
+Ebitengine-based card dealer helper for "Welcome To" / "Bumazhnye kvartaly".
 
-1. Сделан набор миссий, которые разбиты по 3-м уровням. На старте игры их можно случайно выбрать, в процессе игры можно выполнять миссии и после выполнения миссии можно замешать карты домов. Карточки содержат информацию с номером миссии, условиями выполнения, награды за первое выполнение и последующее
-2. Сделан набор карточек, которые соответствуют бумаге (пара из цифра с одной стороны - вариант хода с другой)
-3. Разработан алгоритм подачи карточек как на столе (сначала замешиваются 3 колоды, потом постепенно меняются карточки пока не закончатся колоды, комбинируются вариант хода текущей карты + номер следующей)
-4. Будет видно, какой вариант хода будет следующий если ход будет
-5. Есть команда старта игры
-6. Есть команды закончить игру
-7. Есть счетчик ходов
-8. Есть возможность глянуть предыдущие ходы
+The app embeds lightweight card images from `internal/assets/cards/` and
+`internal/assets/missions/`. The heavy original scans were removed; the
+checked-in images are already resized and compressed for desktop and browser
+builds.
+
+## Desktop
+
+From the repository root:
+
+```powershell
+make desktop
+```
+
+If `make` is not installed:
+
+```powershell
+rtk go run ./cmd/paper-quarters
+```
+
+## Browser
+
+From the repository root:
+
+```powershell
+make browser
+```
+
+If `make` is not installed:
+
+```powershell
+rtk powershell -NoLogo -NoProfile -NonInteractive -Command "`$env:GOOS='js'; `$env:GOARCH='wasm'; go build -o web\paper_quarters.wasm ./cmd/paper-quarters; Remove-Item Env:GOOS; Remove-Item Env:GOARCH"
+rtk powershell -NoLogo -NoProfile -NonInteractive -Command "Copy-Item (Join-Path (go env GOROOT) 'lib\wasm\wasm_exec.js') web\wasm_exec.js"
+rtk go run ./cmd/serve
+```
+
+Then open:
+
+```text
+http://localhost:8080/
+```
+
+## Commands
+
+```text
+make desktop   run the desktop app
+make wasm      build browser wasm files
+make serve     serve web/ at http://localhost:8080/
+make browser   build wasm, then serve web/
+make test      run Go tests
+make clean     remove generated outputs
+```
+
+The `Makefile` uses standard POSIX commands and should work on Ubuntu and
+macOS. On Windows, use Git Bash/MSYS2/WSL for `make`, or use the fallback
+PowerShell commands above.
+
+## Docker
+
+Docker can produce both desktop and browser artifacts:
+
+```powershell
+docker build --output type=local,dest=dist .
+```
+
+The output will contain:
+
+- `desktop/paper_quarters.exe`
+- `web/index.html`
+- `web/paper_quarters.wasm`
+- `web/wasm_exec.js`
