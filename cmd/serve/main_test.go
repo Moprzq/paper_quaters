@@ -25,3 +25,17 @@ func TestNoCacheHeaders(t *testing.T) {
 		t.Fatalf("Expires = %q", got)
 	}
 }
+
+func TestBrowserURLUsesRussianByDefaultWithoutQuery(t *testing.T) {
+	got := browserURL("localhost:8080", "ru")
+	if got != "http://localhost:8080/" {
+		t.Fatalf("browserURL() = %q", got)
+	}
+}
+
+func TestBrowserURLAddsEnglishLanguageQuery(t *testing.T) {
+	got := browserURL("localhost:8080", "eng")
+	if got != "http://localhost:8080/?lang=eng" {
+		t.Fatalf("browserURL() = %q", got)
+	}
+}

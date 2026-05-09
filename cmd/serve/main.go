@@ -6,10 +6,12 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
 )
 
 func main() {
@@ -17,19 +19,24 @@ func main() {
 	dir := flag.String("dir", "web", "directory to serve")
 	build := flag.Bool("build", false, "rebuild browser wasm before serving")
 	open := flag.Bool("open", true, "open the served URL in the default browser")
+	language := flag.String("lang", "ru", "browser UI language: ru or eng")
 	flag.Parse()
 
+	normalizedLanguage, err := normalizeLanguage(*language)
+	if err != nil {
+		log.Fatal(err)
+	}
 	if err := ensureWASM(*dir, *build); err != nil {
 		log.Fatal(err)
 	}
 
 	http.Handle("/", noCache(http.FileServer(http.Dir(*dir))))
 
-	url := "http://" + *addr + "/"
-	fmt.Printf("Serving %s at %s\n", *dir, url)
+	serveURL := browserURL(*addr, normalizedLanguage)
+	fmt.Printf("Serving %s at %s\n", *dir, serveURL)
 	if *open {
 		go func() {
-			if err := openBrowser(url); err != nil {
+			if err := openBrowser(serveURL); err != nil {
 				log.Printf("open browser: %v", err)
 			}
 		}()
@@ -110,4 +117,29 @@ func openBrowser(url string) error {
 		cmd = exec.Command("xdg-open", url)
 	}
 	return cmd.Start()
+}
+
+func normalizeLanguage(value string) (string, error) {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "", "ru":
+		return "ru", nil
+	case "eng", "en":
+		return "eng", nil
+	default:
+		return "", fmt.Errorf("unsupported language %q: use ru or eng", value)
+	}
+}
+
+func browserURL(addr, language string) string {
+	u := url.URL{
+		Scheme: "http",
+		Host:   addr,
+		Path:   "/",
+	}
+	if language == "eng" {
+		q := u.Query()
+		q.Set("lang", language)
+		u.RawQuery = q.Encode()
+	}
+	return u.String()
 }

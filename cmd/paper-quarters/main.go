@@ -1,13 +1,17 @@
 package main
 
 import (
+	"flag"
 	"log"
 
 	"paper_quarters/internal/app"
 )
 
 func main() {
-	if err := app.Run(); err != nil {
+	language := flag.String("lang", "", "UI language: ru or eng")
+	flag.Parse()
+
+	if err := app.Run(*language); err != nil {
 		log.Fatal(err)
 	}
 }

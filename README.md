@@ -54,6 +54,12 @@ Without `make`:
 go run ./cmd/paper-quarters
 ```
 
+Russian UI is used by default. To use English:
+
+```powershell
+go run ./cmd/paper-quarters -lang eng
+```
+
 ## Browser
 
 With `make`:
@@ -67,6 +73,12 @@ serve the existing browser build without rebuilding it, run:
 
 ```bash
 make serve
+```
+
+Russian UI is used by default. To open English UI:
+
+```bash
+make browser GAME_LANG=eng
 ```
 
 Then open:
@@ -85,6 +97,12 @@ To serve an existing browser build without rebuilding it:
 
 ```powershell
 go run ./cmd/serve
+```
+
+To open English UI without `make`:
+
+```powershell
+go run ./cmd/serve --build -lang eng
 ```
 
 If `web\paper_quarters.wasm` or `web\wasm_exec.js` does not exist, `serve`
@@ -106,12 +124,15 @@ http://localhost:8080/
 ```text
 make desktop     run the desktop app
 make wasm        build browser wasm files
-make serve       serve existing web build, building it only if missing
-make serve-build rebuild browser wasm, then serve web/
-make browser     rebuild browser wasm, then serve web/
+make serve       serve existing web build and open it in a browser
+make serve-build rebuild browser wasm, then serve and open it
+make browser     rebuild browser wasm, then serve and open it
 make test        run Go tests
 make clean       remove generated outputs
 ```
+
+Use `GAME_LANG=eng` with `make desktop`, `make serve`, or `make browser` to
+select English UI. Without it, the UI is Russian.
 
 ## Docker
 

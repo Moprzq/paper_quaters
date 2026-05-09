@@ -53,6 +53,7 @@ type Game struct {
 	cache          *imageCache
 	deck           Deck
 	missions       GameMissions
+	text           uiText
 	turn           int
 	housesBuilt    int
 	maxCountedTurn int
@@ -65,7 +66,7 @@ type roundedCardKey struct {
 	height int
 }
 
-func newGame() (*Game, error) {
+func newGame(language Language) (*Game, error) {
 	cache := newImageCache()
 	deck, err := newDeck(cache)
 	if err != nil {
@@ -81,6 +82,7 @@ func newGame() (*Game, error) {
 		cache:          cache,
 		deck:           deck,
 		missions:       missions,
+		text:           uiTextFor(language),
 		turn:           1,
 		maxCountedTurn: 1,
 		roundedCards:   make(map[roundedCardKey]*ebiten.Image),
@@ -193,13 +195,13 @@ func (g *Game) drawMissions(screen *ebiten.Image) {
 }
 
 func (g *Game) drawControls(screen *ebiten.Image) {
-	drawLabel(screen, fmt.Sprintf("Turn: %d/%d", g.turn, lastTurn), Rect{X: 1550, Y: 90, W: 200, H: 60})
-	drawLabel(screen, fmt.Sprintf("Домов построенно: %d", g.housesBuilt), Rect{X: 1440, Y: 190, W: 420, H: 60})
-	drawButton(screen, "Next turn", nextTurnButton())
-	drawButton(screen, "Back", backButton())
-	drawButton(screen, "Shuffle", shuffleButton())
-	drawButton(screen, "Restart", restartButton())
-	drawLabelWithSize(screen, "Space/Right: Next turn   Left: Back   S: Shuffle   R: Restart   Q/Esc: Exit   F11: Fullscreen", shortcutHintRect(), hintFontSize)
+	drawLabel(screen, fmt.Sprintf(g.text.turn, g.turn, lastTurn), Rect{X: 1550, Y: 90, W: 200, H: 60})
+	drawLabel(screen, fmt.Sprintf(g.text.housesBuilt, g.housesBuilt), Rect{X: 1440, Y: 190, W: 420, H: 60})
+	drawButton(screen, g.text.nextTurn, nextTurnButton())
+	drawButton(screen, g.text.back, backButton())
+	drawButton(screen, g.text.shuffle, shuffleButton())
+	drawButton(screen, g.text.restart, restartButton())
+	drawLabelWithSize(screen, g.text.hint, shortcutHintRect(), hintFontSize)
 }
 
 func (g *Game) drawMission(screen *ebiten.Image, mission Mission, rect Rect) {
@@ -329,33 +331,46 @@ func thirdMissionRect() Rect {
 }
 
 func nextTurnButton() Rect {
-	return Rect{X: 1490, Y: 440, W: 330, H: 82}
+	return rightControlRect(330, 440, 82)
 }
 
 func backButton() Rect {
-	return Rect{X: 1560, Y: 590, W: 160, H: 74}
+	return rightControlRect(200, 590, 74)
 }
 
 func shuffleButton() Rect {
-	return Rect{X: 1550, Y: 790, W: 200, H: 60}
+	return rightControlRect(260, 790, 60)
 }
 
 func restartButton() Rect {
-	return Rect{X: 1550, Y: 890, W: 200, H: 60}
+	return rightControlRect(220, 890, 60)
 }
 
 func shortcutHintRect() Rect {
 	return Rect{X: 385, Y: 1006, W: 1150, H: 42}
 }
 
-func Run() error {
-	game, err := newGame()
+func rightControlRect(width, y, height float64) Rect {
+	const centerX = 1650
+	return Rect{X: centerX - width/2, Y: y, W: width, H: height}
+}
+
+func Run(languageValue string) error {
+	language, err := normalizeLanguage(languageValue)
+	if err != nil {
+		return err
+	}
+	if languageValue == "" {
+		language = defaultLanguage()
+	}
+
+	game, err := newGame(language)
 	if err != nil {
 		return err
 	}
 
 	ebiten.SetWindowSize(1280, 720)
-	ebiten.SetWindowTitle("Paper Quarters")
+	ebiten.SetWindowTitle(game.text.windowTitle)
 	ebiten.SetFullscreen(true)
 	return ebiten.RunGame(game)
 }

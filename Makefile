@@ -2,6 +2,7 @@ APP_NAME := paper_quarters
 WEB_DIR := web
 WASM := $(WEB_DIR)/$(APP_NAME).wasm
 WASM_EXEC := $(shell go env GOROOT)/lib/wasm/wasm_exec.js
+GAME_LANG ?= ru
 
 .PHONY: help desktop wasm serve serve-build browser test clean
 
@@ -16,17 +17,17 @@ help:
 	@echo "  make clean       - remove generated outputs"
 
 desktop:
-	go run ./cmd/paper-quarters
+	go run ./cmd/paper-quarters -lang $(GAME_LANG)
 
 wasm:
 	GOOS=js GOARCH=wasm go build -o $(WASM) ./cmd/paper-quarters
 	cp "$(WASM_EXEC)" "$(WEB_DIR)/wasm_exec.js"
 
 serve:
-	go run ./cmd/serve
+	go run ./cmd/serve -lang $(GAME_LANG)
 
 serve-build:
-	go run ./cmd/serve --build
+	go run ./cmd/serve --build -lang $(GAME_LANG)
 
 browser: serve-build
 
