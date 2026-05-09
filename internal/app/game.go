@@ -45,10 +45,12 @@ func (r Rect) Contains(x, y int) bool {
 }
 
 type Game struct {
-	cache    *imageCache
-	deck     Deck
-	missions GameMissions
-	turn     int
+	cache          *imageCache
+	deck           Deck
+	missions       GameMissions
+	turn           int
+	housesBuilt    int
+	maxCountedTurn int
 }
 
 func newGame() (*Game, error) {
@@ -64,10 +66,11 @@ func newGame() (*Game, error) {
 	}
 
 	return &Game{
-		cache:    cache,
-		deck:     deck,
-		missions: missions,
-		turn:     1,
+		cache:          cache,
+		deck:           deck,
+		missions:       missions,
+		turn:           1,
+		maxCountedTurn: 1,
 	}, nil
 }
 
@@ -75,6 +78,11 @@ func (g *Game) Update() error {
 	mouseX, mouseY := ebiten.CursorPosition()
 
 	switch {
+	case inpututil.IsKeyJustPressed(ebiten.KeyEscape),
+		inpututil.IsKeyJustPressed(ebiten.KeyQ):
+		return ebiten.Termination
+	case inpututil.IsKeyJustPressed(ebiten.KeyF11):
+		ebiten.SetFullscreen(!ebiten.IsFullscreen())
 	case inpututil.IsKeyJustPressed(ebiten.KeySpace),
 		inpututil.IsKeyJustPressed(ebiten.KeyArrowRight),
 		clicked(nextTurnButton(), mouseX, mouseY):
@@ -120,6 +128,10 @@ func (g *Game) Layout(_, _ int) (int, int) {
 func (g *Game) nextTurn() {
 	if g.turn < lastTurn {
 		g.turn++
+		if g.turn > g.maxCountedTurn {
+			g.housesBuilt++
+			g.maxCountedTurn = g.turn
+		}
 	}
 }
 
@@ -131,6 +143,7 @@ func (g *Game) previousTurn() {
 
 func (g *Game) shuffleDeck() {
 	g.turn = 1
+	g.maxCountedTurn = 1
 	g.deck.Shuffle()
 }
 
@@ -141,6 +154,8 @@ func (g *Game) restart() error {
 	}
 
 	g.turn = 1
+	g.housesBuilt = 0
+	g.maxCountedTurn = 1
 	g.deck.Shuffle()
 	g.missions = missions
 	return nil
@@ -167,6 +182,7 @@ func (g *Game) drawMissions(screen *ebiten.Image) {
 
 func (g *Game) drawControls(screen *ebiten.Image) {
 	drawLabel(screen, fmt.Sprintf("Turn: %d/%d", g.turn, lastTurn), Rect{X: 1550, Y: 90, W: 200, H: 60})
+	drawLabel(screen, fmt.Sprintf("Домов построенно: %d", g.housesBuilt), Rect{X: 1440, Y: 190, W: 420, H: 60})
 	drawButton(screen, "Next turn", nextTurnButton())
 	drawButton(screen, "Back", backButton())
 	drawButton(screen, "Shuffle", shuffleButton())
@@ -259,5 +275,6 @@ func Run() error {
 
 	ebiten.SetWindowSize(1280, 720)
 	ebiten.SetWindowTitle("Paper Quarters")
+	ebiten.SetFullscreen(true)
 	return ebiten.RunGame(game)
 }
