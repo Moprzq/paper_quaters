@@ -1,12 +1,16 @@
 package app
 
 import (
+	"bytes"
 	"fmt"
 	"image/color"
+	"log"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
+	"github.com/hajimehoshi/ebiten/v2/text/v2"
+	"golang.org/x/image/font/gofont/goregular"
 )
 
 const (
@@ -20,7 +24,11 @@ const (
 
 	cardWidth  = 200
 	cardHeight = 300
+
+	controlFontSize = 32
 )
+
+var controlFaceSource = mustLoadControlFaceSource()
 
 type Rect struct {
 	X float64
@@ -187,7 +195,28 @@ func drawButton(screen *ebiten.Image, label string, rect Rect) {
 
 func drawLabel(screen *ebiten.Image, label string, rect Rect) {
 	ebitenutil.DrawRect(screen, rect.X, rect.Y, rect.W, rect.H, color.RGBA{A: 50})
-	ebitenutil.DebugPrintAt(screen, label, int(rect.X)+16, int(rect.Y)+22)
+
+	face := &text.GoTextFace{
+		Source: controlFaceSource,
+		Size:   controlFontSize,
+	}
+	textWidth, textHeight := text.Measure(label, face, 0)
+
+	opts := &text.DrawOptions{}
+	opts.GeoM.Translate(
+		rect.X+(rect.W-textWidth)/2,
+		rect.Y+(rect.H-textHeight)/2,
+	)
+	opts.ColorScale.ScaleWithColor(color.Black)
+	text.Draw(screen, label, face, opts)
+}
+
+func mustLoadControlFaceSource() *text.GoTextFaceSource {
+	source, err := text.NewGoTextFaceSource(bytes.NewReader(goregular.TTF))
+	if err != nil {
+		log.Fatalf("load control font: %v", err)
+	}
+	return source
 }
 
 func clicked(rect Rect, mouseX, mouseY int) bool {

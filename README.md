@@ -1,40 +1,65 @@
 # Paper Quarters
 
-Ebitengine-based card dealer helper for "Welcome To" / "Bumazhnye kvartaly".
+Card dealer helper for **Welcome To** / **Bumazhnye kvartaly**.
 
-The app embeds lightweight card images from `internal/assets/cards/` and
-`internal/assets/missions/`. The heavy original scans were removed; the
-checked-in images are already resized and compressed for desktop and browser
-builds.
+The project is now an Ebitengine app. It can run as a desktop window or as a
+browser WebAssembly build. The old terminal version was removed.
+
+## Features
+
+- Shuffles the card deck into three stacks.
+- Shows the current three card/action pairs.
+- Shows three random missions.
+- Lets you go forward/back, reshuffle, restart, and mark missions as completed.
+- Embeds lightweight card images, so the desktop binary does not need external
+  image folders next to it.
+
+## Project Layout
+
+```text
+cmd/
+  paper-quarters/   desktop/browser app entrypoint
+  serve/            local HTTP server for the browser build
+
+internal/
+  app/              game state, deck, missions, UI, Ebitengine loop
+  assets/           embedded optimized card and mission images
+
+web/
+  index.html        browser page
+```
+
+There are two `main` packages because the repository builds two separate
+commands: the app itself and the local web server.
+
+## Requirements
+
+- Go `1.26.3`
+- `make` for the short commands on Ubuntu/macOS
+
+On Windows, use Git Bash/MSYS2/WSL for `make`, or use the PowerShell fallback
+commands below.
 
 ## Desktop
 
-From the repository root:
+With `make`:
 
-```powershell
+```bash
 make desktop
 ```
 
-If `make` is not installed:
+Without `make`:
 
 ```powershell
-rtk go run ./cmd/paper-quarters
+go run ./cmd/paper-quarters
 ```
 
 ## Browser
 
-From the repository root:
+With `make`:
 
-```powershell
+```bash
 make browser
-```
-
-If `make` is not installed:
-
-```powershell
-rtk powershell -NoLogo -NoProfile -NonInteractive -Command "`$env:GOOS='js'; `$env:GOARCH='wasm'; go build -o web\paper_quarters.wasm ./cmd/paper-quarters; Remove-Item Env:GOOS; Remove-Item Env:GOARCH"
-rtk powershell -NoLogo -NoProfile -NonInteractive -Command "Copy-Item (Join-Path (go env GOROOT) 'lib\wasm\wasm_exec.js') web\wasm_exec.js"
-rtk go run ./cmd/serve
 ```
 
 Then open:
@@ -43,7 +68,28 @@ Then open:
 http://localhost:8080/
 ```
 
-## Commands
+Without `make` on Windows:
+
+```powershell
+$env:GOOS='js'
+$env:GOARCH='wasm'
+go build -o web\paper_quarters.wasm ./cmd/paper-quarters
+Remove-Item Env:GOOS
+Remove-Item Env:GOARCH
+
+$goroot = go env GOROOT
+Copy-Item $goroot\lib\wasm\wasm_exec.js web\wasm_exec.js
+
+go run ./cmd/serve
+```
+
+Then open:
+
+```text
+http://localhost:8080/
+```
+
+## Make Commands
 
 ```text
 make desktop   run the desktop app
@@ -53,10 +99,6 @@ make browser   build wasm, then serve web/
 make test      run Go tests
 make clean     remove generated outputs
 ```
-
-The `Makefile` uses standard POSIX commands and should work on Ubuntu and
-macOS. On Windows, use Git Bash/MSYS2/WSL for `make`, or use the fallback
-PowerShell commands above.
 
 ## Docker
 
@@ -72,3 +114,10 @@ The output will contain:
 - `web/index.html`
 - `web/paper_quarters.wasm`
 - `web/wasm_exec.js`
+
+## Notes
+
+- Source card images live under `internal/assets/`.
+- The images are already resized/compressed; there is no asset generation step.
+- The UI text size is controlled by `controlFontSize` in
+  `internal/app/game.go`.
