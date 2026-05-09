@@ -201,7 +201,7 @@ func (g *Game) drawControls(screen *ebiten.Image) {
 	drawButton(screen, g.text.back, backButton())
 	drawButton(screen, g.text.shuffle, shuffleButton())
 	drawButton(screen, g.text.restart, restartButton())
-	drawLabelWithSize(screen, g.text.hint, shortcutHintRect(), hintFontSize)
+	drawTextCentered(screen, g.text.hint, shortcutHintRect(), hintFontSize)
 }
 
 func (g *Game) drawMission(screen *ebiten.Image, mission Mission, rect Rect) {
@@ -252,7 +252,10 @@ func drawLabel(screen *ebiten.Image, label string, rect Rect) {
 
 func drawLabelWithSize(screen *ebiten.Image, label string, rect Rect, fontSize float64) {
 	drawRoundedRect(screen, rect, labelCornerRadius, color.RGBA{A: 50})
+	drawTextCentered(screen, label, rect, fontSize)
+}
 
+func drawTextCentered(screen *ebiten.Image, label string, rect Rect, fontSize float64) {
 	face := &text.GoTextFace{
 		Source: controlFaceSource,
 		Size:   fontSize,

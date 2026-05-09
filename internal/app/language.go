@@ -45,7 +45,7 @@ func uiTextFor(language Language) uiText {
 			back:        "Back",
 			shuffle:     "Shuffle",
 			restart:     "Restart",
-			hint:        "Space/Right: Next turn   Left: Back   S: Shuffle   R: Restart   Q/Esc: Exit   F11: Fullscreen",
+			hint:        "Space/→: Next turn   ←: Back   S: Shuffle   R: Restart   Q/Esc: Exit   F11: Fullscreen",
 		}
 	default:
 		return uiText{
@@ -54,9 +54,9 @@ func uiTextFor(language Language) uiText {
 			housesBuilt: "Домов построено: %d",
 			nextTurn:    "Следующий ход",
 			back:        "Назад",
-			shuffle:     "Перемешать",
-			restart:     "Рестарт",
-			hint:        "Пробел/Вправо: ход   Влево: назад   S: перемешать   R: рестарт   Q/Esc: выход   F11: экран",
+			shuffle:     "Замешать",
+			restart:     "Новая игра",
+			hint:        "Пробел/→: Следующий ход   ←: Назад   S: Замешать   R: Новая игра   Q/Esc: Выход   F11: Полный экран",
 		}
 	}
 }
