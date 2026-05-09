@@ -3,16 +3,17 @@ WEB_DIR := web
 WASM := $(WEB_DIR)/$(APP_NAME).wasm
 WASM_EXEC := $(shell go env GOROOT)/lib/wasm/wasm_exec.js
 
-.PHONY: help desktop wasm serve browser test clean
+.PHONY: help desktop wasm serve serve-build browser test clean
 
 help:
 	@echo "Available commands:"
-	@echo "  make desktop   - run the desktop app"
-	@echo "  make wasm      - build browser wasm files"
-	@echo "  make serve     - serve web/ at http://localhost:8080/"
-	@echo "  make browser   - build wasm, then serve web/"
-	@echo "  make test      - run Go tests"
-	@echo "  make clean     - remove generated outputs"
+	@echo "  make desktop     - run the desktop app"
+	@echo "  make wasm        - build browser wasm files"
+	@echo "  make serve       - serve existing web build and open it in a browser"
+	@echo "  make serve-build - rebuild browser wasm, then serve and open it"
+	@echo "  make browser     - rebuild browser wasm, then serve and open it"
+	@echo "  make test        - run Go tests"
+	@echo "  make clean       - remove generated outputs"
 
 desktop:
 	go run ./cmd/paper-quarters
@@ -24,7 +25,10 @@ wasm:
 serve:
 	go run ./cmd/serve
 
-browser: wasm serve
+serve-build:
+	go run ./cmd/serve --build
+
+browser: serve-build
 
 test:
 	go test ./...

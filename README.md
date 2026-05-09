@@ -62,6 +62,13 @@ With `make`:
 make browser
 ```
 
+This rebuilds the browser WebAssembly files and starts the local server. To
+serve the existing browser build without rebuilding it, run:
+
+```bash
+make serve
+```
+
 Then open:
 
 ```text
@@ -71,17 +78,22 @@ http://localhost:8080/
 Without `make` on Windows:
 
 ```powershell
-$env:GOOS='js'
-$env:GOARCH='wasm'
-go build -o web\paper_quarters.wasm ./cmd/paper-quarters
-Remove-Item Env:GOOS
-Remove-Item Env:GOARCH
+go run ./cmd/serve --build
+```
 
-$goroot = go env GOROOT
-Copy-Item $goroot\lib\wasm\wasm_exec.js web\wasm_exec.js
+To serve an existing browser build without rebuilding it:
 
+```powershell
 go run ./cmd/serve
 ```
+
+If `web\paper_quarters.wasm` or `web\wasm_exec.js` does not exist, `serve`
+builds the missing browser files automatically.
+
+The local server sends no-cache headers for browser files, so restarting the
+server is enough for the browser to request the latest build.
+By default, `serve` opens the game in your default browser. Use
+`go run ./cmd/serve -open=false` to start only the server.
 
 Then open:
 
@@ -92,12 +104,13 @@ http://localhost:8080/
 ## Make Commands
 
 ```text
-make desktop   run the desktop app
-make wasm      build browser wasm files
-make serve     serve web/ at http://localhost:8080/
-make browser   build wasm, then serve web/
-make test      run Go tests
-make clean     remove generated outputs
+make desktop     run the desktop app
+make wasm        build browser wasm files
+make serve       serve existing web build, building it only if missing
+make serve-build rebuild browser wasm, then serve web/
+make browser     rebuild browser wasm, then serve web/
+make test        run Go tests
+make clean       remove generated outputs
 ```
 
 ## Docker
