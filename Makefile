@@ -8,13 +8,13 @@ GAME_LANG ?= ru
 
 help:
 	@echo "Available commands:"
-	@echo "  make desktop     - run the desktop app"
-	@echo "  make wasm        - build browser wasm files"
-	@echo "  make serve       - serve existing web build and open it in a browser"
-	@echo "  make serve-build - rebuild browser wasm, then serve and open it"
-	@echo "  make browser     - rebuild browser wasm, then serve and open it"
-	@echo "  make test        - run Go tests"
-	@echo "  make clean       - remove generated outputs"
+	@echo "  make desktop       - run the desktop app"
+	@echo "  make wasm          - build browser wasm files"
+	@echo "  make serve         - serve existing web build and open it in a browser"
+	@echo "  make serve-build   - rebuild browser wasm, then serve and open it"
+	@echo "  make browser       - rebuild browser wasm, then serve and open it"
+	@echo "  make test          - run Go tests"
+	@echo "  make clean         - remove generated outputs"
 
 desktop:
 	go run ./cmd/paper-quarters -lang $(GAME_LANG)

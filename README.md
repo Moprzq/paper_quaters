@@ -1,157 +1,97 @@
 # Paper Quarters
 
-Card dealer helper for **Welcome To** / **Bumazhnye kvartaly**.
-
-The project is now an Ebitengine app. It can run as a desktop window or as a
-browser WebAssembly build. The old terminal version was removed.
+Card dealer helper for **Welcome To** / **Бумажные кварталы**. Runs as a
+desktop Ebitengine app or as a browser WebAssembly app.
 
 ## Features
 
-- Shuffles the card deck into three stacks.
-- Shows the current three card/action pairs.
-- Shows three random missions.
-- Lets you go forward/back, reshuffle, restart, and mark missions as completed.
-- Embeds lightweight card images, so the desktop binary does not need external
-  image folders next to it.
+- Shows three card/action pairs and three missions.
+- Supports moving forward/back through turns, shuffling, restarting, and marking
+  missions completed.
+- Tracks built houses. The counter grows only on newly reached turns, survives
+  shuffles, and resets on restart.
+- Russian and English UI. Russian is the default.
 
-## Project Layout
+## Controls
 
 ```text
-cmd/
-  paper-quarters/   desktop/browser app entrypoint
-  serve/            local HTTP server for the browser build
-
-internal/
-  app/              game state, deck, missions, UI, Ebitengine loop
-  assets/           embedded optimized card and mission images
-
-web/
-  index.html        browser page
+Space / Right arrow   next turn
+Left arrow            back
+S                     shuffle deck
+R                     restart game
+1 / 2 / 3             mark mission completed
+F11                   toggle fullscreen
+Q / Esc               exit
 ```
 
-There are two `main` packages because the repository builds two separate
-commands: the app itself and the local web server.
+## Run
 
-## Requirements
-
-- Go `1.26.3`
-- `make` for the short commands on Ubuntu/macOS
-
-On Windows, use Git Bash/MSYS2/WSL for `make`, or use the PowerShell fallback
-commands below.
-
-## Desktop
-
-With `make`:
+Desktop:
 
 ```bash
 make desktop
+```
+
+Browser:
+
+```bash
+make browser
+```
+
+English UI:
+
+```bash
+make desktop GAME_LANG=eng
+make browser GAME_LANG=eng
 ```
 
 Without `make`:
 
 ```powershell
 go run ./cmd/paper-quarters
-```
-
-Russian UI is used by default. To use English:
-
-```powershell
 go run ./cmd/paper-quarters -lang eng
-```
 
-## Browser
-
-With `make`:
-
-```bash
-make browser
-```
-
-This rebuilds the browser WebAssembly files and starts the local server. To
-serve the existing browser build without rebuilding it, run:
-
-```bash
-make serve
-```
-
-Russian UI is used by default. To open English UI:
-
-```bash
-make browser GAME_LANG=eng
-```
-
-Then open:
-
-```text
-http://localhost:8080/
-```
-
-Without `make` on Windows:
-
-```powershell
 go run ./cmd/serve --build
-```
-
-To serve an existing browser build without rebuilding it:
-
-```powershell
-go run ./cmd/serve
-```
-
-To open English UI without `make`:
-
-```powershell
 go run ./cmd/serve --build -lang eng
 ```
 
-If `web\paper_quarters.wasm` or `web\wasm_exec.js` does not exist, `serve`
-builds the missing browser files automatically.
+## Serve
 
-The local server sends no-cache headers for browser files, so restarting the
-server is enough for the browser to request the latest build.
-By default, `serve` opens the game in your default browser. Use
-`go run ./cmd/serve -open=false` to start only the server.
+`serve` opens the game in the default browser and serves `web/` with no-cache
+headers.
 
-Then open:
-
-```text
-http://localhost:8080/
+```powershell
+go run ./cmd/serve              # use existing build, build if missing
+go run ./cmd/serve --build      # force rebuild
+go run ./cmd/serve -open=false  # do not open browser
+go run ./cmd/serve -addr localhost:18080
 ```
+
+English browser UI uses `?lang=eng`. Without it, the UI is Russian.
 
 ## Make Commands
 
 ```text
-make desktop     run the desktop app
-make wasm        build browser wasm files
-make serve       serve existing web build and open it in a browser
-make serve-build rebuild browser wasm, then serve and open it
-make browser     rebuild browser wasm, then serve and open it
-make test        run Go tests
-make clean       remove generated outputs
+make desktop       run the desktop app
+make wasm          build browser wasm files
+make serve         serve existing web build and open it in a browser
+make serve-build   rebuild browser wasm, then serve and open it
+make browser       rebuild browser wasm, then serve and open it
+make test          run Go tests
+make clean         remove generated outputs
 ```
 
-Use `GAME_LANG=eng` with `make desktop`, `make serve`, or `make browser` to
-select English UI. Without it, the UI is Russian.
+## Project Layout
 
-## Docker
-
-Docker can produce both desktop and browser artifacts:
-
-```powershell
-docker build --output type=local,dest=dist .
+```text
+cmd/paper-quarters/   app entrypoint
+cmd/serve/            local browser server
+internal/app/         game state, UI, localization
+internal/assets/      embedded card and mission images
+web/                  browser page and generated wasm files
 ```
 
-The output will contain:
+## Requirements
 
-- `desktop/paper_quarters.exe`
-- `web/index.html`
-- `web/paper_quarters.wasm`
-- `web/wasm_exec.js`
-
-## Notes
-
-- Source card images live under `internal/assets/`.
-- The images are already resized/compressed; there is no asset generation step.
-- The UI text size is controlled by `controlFontSize` in
-  `internal/app/game.go`.
+- Go `1.26.3`
+- `make` optional
