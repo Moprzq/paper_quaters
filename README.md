@@ -54,12 +54,31 @@ Without `make`:
 go run ./cmd/paper-quarters
 ```
 
+Russian UI is used by default. To use English:
+
+```powershell
+go run ./cmd/paper-quarters -lang eng
+```
+
 ## Browser
 
 With `make`:
 
 ```bash
 make browser
+```
+
+This rebuilds the browser WebAssembly files and starts the local server. To
+serve the existing browser build without rebuilding it, run:
+
+```bash
+make serve
+```
+
+Russian UI is used by default. To open English UI:
+
+```bash
+make browser GAME_LANG=eng
 ```
 
 Then open:
@@ -71,17 +90,28 @@ http://localhost:8080/
 Without `make` on Windows:
 
 ```powershell
-$env:GOOS='js'
-$env:GOARCH='wasm'
-go build -o web\paper_quarters.wasm ./cmd/paper-quarters
-Remove-Item Env:GOOS
-Remove-Item Env:GOARCH
+go run ./cmd/serve --build
+```
 
-$goroot = go env GOROOT
-Copy-Item $goroot\lib\wasm\wasm_exec.js web\wasm_exec.js
+To serve an existing browser build without rebuilding it:
 
+```powershell
 go run ./cmd/serve
 ```
+
+To open English UI without `make`:
+
+```powershell
+go run ./cmd/serve --build -lang eng
+```
+
+If `web\paper_quarters.wasm` or `web\wasm_exec.js` does not exist, `serve`
+builds the missing browser files automatically.
+
+The local server sends no-cache headers for browser files, so restarting the
+server is enough for the browser to request the latest build.
+By default, `serve` opens the game in your default browser. Use
+`go run ./cmd/serve -open=false` to start only the server.
 
 Then open:
 
@@ -92,13 +122,17 @@ http://localhost:8080/
 ## Make Commands
 
 ```text
-make desktop   run the desktop app
-make wasm      build browser wasm files
-make serve     serve web/ at http://localhost:8080/
-make browser   build wasm, then serve web/
-make test      run Go tests
-make clean     remove generated outputs
+make desktop     run the desktop app
+make wasm        build browser wasm files
+make serve       serve existing web build and open it in a browser
+make serve-build rebuild browser wasm, then serve and open it
+make browser     rebuild browser wasm, then serve and open it
+make test        run Go tests
+make clean       remove generated outputs
 ```
+
+Use `GAME_LANG=eng` with `make desktop`, `make serve`, or `make browser` to
+select English UI. Without it, the UI is Russian.
 
 ## Docker
 

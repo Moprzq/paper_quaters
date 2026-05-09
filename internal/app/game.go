@@ -7,9 +7,9 @@ import (
 	"log"
 
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
+	"github.com/hajimehoshi/ebiten/v2/vector"
 	"golang.org/x/image/font/gofont/goregular"
 )
 
@@ -22,10 +22,15 @@ const (
 	lastTurn        = 26
 	missionsInLevel = 6
 
-	cardWidth  = 200
-	cardHeight = 300
+	missionCardWidth  = 200
+	missionCardHeight = 300
+	turnCardWidth     = 240
+	turnCardHeight    = 360
 
-	controlFontSize = 32
+	controlFontSize   = 32
+	hintFontSize      = 24
+	cardCornerRadius  = 14
+	labelCornerRadius = 10
 )
 
 var controlFaceSource = mustLoadControlFaceSource()
@@ -45,13 +50,23 @@ func (r Rect) Contains(x, y int) bool {
 }
 
 type Game struct {
-	cache    *imageCache
-	deck     Deck
-	missions GameMissions
-	turn     int
+	cache          *imageCache
+	deck           Deck
+	missions       GameMissions
+	text           uiText
+	turn           int
+	housesBuilt    int
+	maxCountedTurn int
+	roundedCards   map[roundedCardKey]*ebiten.Image
 }
 
-func newGame() (*Game, error) {
+type roundedCardKey struct {
+	img    *ebiten.Image
+	width  int
+	height int
+}
+
+func newGame(language Language) (*Game, error) {
 	cache := newImageCache()
 	deck, err := newDeck(cache)
 	if err != nil {
@@ -64,10 +79,13 @@ func newGame() (*Game, error) {
 	}
 
 	return &Game{
-		cache:    cache,
-		deck:     deck,
-		missions: missions,
-		turn:     1,
+		cache:          cache,
+		deck:           deck,
+		missions:       missions,
+		text:           uiTextFor(language),
+		turn:           1,
+		maxCountedTurn: 1,
+		roundedCards:   make(map[roundedCardKey]*ebiten.Image),
 	}, nil
 }
 
@@ -75,20 +93,24 @@ func (g *Game) Update() error {
 	mouseX, mouseY := ebiten.CursorPosition()
 
 	switch {
+	case inpututil.IsKeyJustPressed(ebiten.KeyEscape),
+		inpututil.IsKeyJustPressed(ebiten.KeyQ):
+		return ebiten.Termination
+	case inpututil.IsKeyJustPressed(ebiten.KeyF11):
+		ebiten.SetFullscreen(!ebiten.IsFullscreen())
 	case inpututil.IsKeyJustPressed(ebiten.KeySpace),
 		inpututil.IsKeyJustPressed(ebiten.KeyArrowRight),
 		clicked(nextTurnButton(), mouseX, mouseY):
 		g.nextTurn()
-	case inpututil.IsKeyJustPressed(ebiten.KeyN),
+	case inpututil.IsKeyJustPressed(ebiten.KeyR),
 		clicked(restartButton(), mouseX, mouseY):
 		if err := g.restart(); err != nil {
 			return err
 		}
-	case inpututil.IsKeyJustPressed(ebiten.KeyB),
-		inpututil.IsKeyJustPressed(ebiten.KeyArrowLeft),
+	case inpututil.IsKeyJustPressed(ebiten.KeyArrowLeft),
 		clicked(backButton(), mouseX, mouseY):
 		g.previousTurn()
-	case inpututil.IsKeyJustPressed(ebiten.KeyR),
+	case inpututil.IsKeyJustPressed(ebiten.KeyS),
 		clicked(shuffleButton(), mouseX, mouseY):
 		g.shuffleDeck()
 	case inpututil.IsKeyJustPressed(ebiten.Key1),
@@ -120,6 +142,10 @@ func (g *Game) Layout(_, _ int) (int, int) {
 func (g *Game) nextTurn() {
 	if g.turn < lastTurn {
 		g.turn++
+		if g.turn > g.maxCountedTurn {
+			g.housesBuilt++
+			g.maxCountedTurn = g.turn
+		}
 	}
 }
 
@@ -131,6 +157,7 @@ func (g *Game) previousTurn() {
 
 func (g *Game) shuffleDeck() {
 	g.turn = 1
+	g.maxCountedTurn = 1
 	g.deck.Shuffle()
 }
 
@@ -141,52 +168,78 @@ func (g *Game) restart() error {
 	}
 
 	g.turn = 1
+	g.housesBuilt = 0
+	g.maxCountedTurn = 1
 	g.deck.Shuffle()
 	g.missions = missions
 	return nil
 }
 
 func (g *Game) drawTurnCards(screen *ebiten.Image) {
-	typeY := float64(screenHeight/2 - cardHeight/2 + 200)
-	cardY := float64(screenHeight/2 - cardHeight/2 - 200)
+	typeY := float64(screenHeight/2 - turnCardHeight/2 + 210)
+	cardY := float64(screenHeight/2 - turnCardHeight/2 - 210)
 
-	drawCardImage(screen, g.deck.Stack1[g.turn-1].TypeImage, float64(screenWidth/2-cardWidth/2-300), typeY)
-	drawCardImage(screen, g.deck.Stack2[g.turn-1].TypeImage, float64(screenWidth/2-cardWidth/2), typeY)
-	drawCardImage(screen, g.deck.Stack3[g.turn-1].TypeImage, float64(screenWidth/2-cardWidth/2+300), typeY)
+	g.drawCardImage(screen, g.deck.Stack1[g.turn-1].TypeImage, float64(screenWidth/2-turnCardWidth/2-310), typeY, turnCardWidth, turnCardHeight)
+	g.drawCardImage(screen, g.deck.Stack2[g.turn-1].TypeImage, float64(screenWidth/2-turnCardWidth/2), typeY, turnCardWidth, turnCardHeight)
+	g.drawCardImage(screen, g.deck.Stack3[g.turn-1].TypeImage, float64(screenWidth/2-turnCardWidth/2+310), typeY, turnCardWidth, turnCardHeight)
 
-	drawCardImage(screen, g.deck.Stack1[g.turn].CardImage, float64(screenWidth/2-cardWidth/2-300), cardY)
-	drawCardImage(screen, g.deck.Stack2[g.turn].CardImage, float64(screenWidth/2-cardWidth/2), cardY)
-	drawCardImage(screen, g.deck.Stack3[g.turn].CardImage, float64(screenWidth/2-cardWidth/2+300), cardY)
+	g.drawCardImage(screen, g.deck.Stack1[g.turn].CardImage, float64(screenWidth/2-turnCardWidth/2-310), cardY, turnCardWidth, turnCardHeight)
+	g.drawCardImage(screen, g.deck.Stack2[g.turn].CardImage, float64(screenWidth/2-turnCardWidth/2), cardY, turnCardWidth, turnCardHeight)
+	g.drawCardImage(screen, g.deck.Stack3[g.turn].CardImage, float64(screenWidth/2-turnCardWidth/2+310), cardY, turnCardWidth, turnCardHeight)
 }
 
 func (g *Game) drawMissions(screen *ebiten.Image) {
-	drawMission(screen, g.missions.First, firstMissionRect())
-	drawMission(screen, g.missions.Second, secondMissionRect())
-	drawMission(screen, g.missions.Third, thirdMissionRect())
+	g.drawMission(screen, g.missions.First, firstMissionRect())
+	g.drawMission(screen, g.missions.Second, secondMissionRect())
+	g.drawMission(screen, g.missions.Third, thirdMissionRect())
 }
 
 func (g *Game) drawControls(screen *ebiten.Image) {
-	drawLabel(screen, fmt.Sprintf("Turn: %d/%d", g.turn, lastTurn), Rect{X: 1550, Y: 90, W: 200, H: 60})
-	drawButton(screen, "Next turn", nextTurnButton())
-	drawButton(screen, "Back", backButton())
-	drawButton(screen, "Shuffle", shuffleButton())
-	drawButton(screen, "Restart", restartButton())
+	drawLabel(screen, fmt.Sprintf(g.text.turn, g.turn, lastTurn), Rect{X: 1550, Y: 90, W: 200, H: 60})
+	drawLabel(screen, fmt.Sprintf(g.text.housesBuilt, g.housesBuilt), Rect{X: 1440, Y: 190, W: 420, H: 60})
+	drawButton(screen, g.text.nextTurn, nextTurnButton())
+	drawButton(screen, g.text.back, backButton())
+	drawButton(screen, g.text.shuffle, shuffleButton())
+	drawButton(screen, g.text.restart, restartButton())
+	drawTextCentered(screen, g.text.hint, shortcutHintRect(), hintFontSize)
 }
 
-func drawMission(screen *ebiten.Image, mission Mission, rect Rect) {
+func (g *Game) drawMission(screen *ebiten.Image, mission Mission, rect Rect) {
 	img := mission.Front
 	if mission.Done {
 		img = mission.Back
 	}
-	drawCardImage(screen, img, rect.X, rect.Y)
+	g.drawCardImage(screen, img, rect.X, rect.Y, int(rect.W), int(rect.H))
 }
 
-func drawCardImage(screen *ebiten.Image, img *ebiten.Image, x, y float64) {
+func (g *Game) drawCardImage(screen *ebiten.Image, img *ebiten.Image, x, y float64, width, height int) {
+	card := g.roundedCardImage(img, width, height)
+	opts := &ebiten.DrawImageOptions{}
+	opts.GeoM.Translate(x, y)
+	screen.DrawImage(card, opts)
+}
+
+func (g *Game) roundedCardImage(img *ebiten.Image, width, height int) *ebiten.Image {
+	key := roundedCardKey{img: img, width: width, height: height}
+	if rounded := g.roundedCards[key]; rounded != nil {
+		return rounded
+	}
+
+	card := ebiten.NewImage(width, height)
 	bounds := img.Bounds()
 	opts := &ebiten.DrawImageOptions{}
-	opts.GeoM.Scale(float64(cardWidth)/float64(bounds.Dx()), float64(cardHeight)/float64(bounds.Dy()))
-	opts.GeoM.Translate(x, y)
-	screen.DrawImage(img, opts)
+	opts.GeoM.Scale(float64(width)/float64(bounds.Dx()), float64(height)/float64(bounds.Dy()))
+	card.DrawImage(img, opts)
+
+	mask := ebiten.NewImage(width, height)
+	drawRoundedRect(mask, Rect{W: float64(width), H: float64(height)}, cardCornerRadius, color.White)
+	maskOpts := &ebiten.DrawImageOptions{
+		Blend: destinationInBlend(),
+	}
+	card.DrawImage(mask, maskOpts)
+
+	g.roundedCards[key] = card
+	return card
 }
 
 func drawButton(screen *ebiten.Image, label string, rect Rect) {
@@ -194,11 +247,18 @@ func drawButton(screen *ebiten.Image, label string, rect Rect) {
 }
 
 func drawLabel(screen *ebiten.Image, label string, rect Rect) {
-	ebitenutil.DrawRect(screen, rect.X, rect.Y, rect.W, rect.H, color.RGBA{A: 50})
+	drawLabelWithSize(screen, label, rect, controlFontSize)
+}
 
+func drawLabelWithSize(screen *ebiten.Image, label string, rect Rect, fontSize float64) {
+	drawRoundedRect(screen, rect, labelCornerRadius, color.RGBA{A: 50})
+	drawTextCentered(screen, label, rect, fontSize)
+}
+
+func drawTextCentered(screen *ebiten.Image, label string, rect Rect, fontSize float64) {
 	face := &text.GoTextFace{
 		Source: controlFaceSource,
-		Size:   controlFontSize,
+		Size:   fontSize,
 	}
 	textWidth, textHeight := text.Measure(label, face, 0)
 
@@ -209,6 +269,44 @@ func drawLabel(screen *ebiten.Image, label string, rect Rect) {
 	)
 	opts.ColorScale.ScaleWithColor(color.Black)
 	text.Draw(screen, label, face, opts)
+}
+
+func drawRoundedRect(dst *ebiten.Image, rect Rect, radius float64, clr color.Color) {
+	r := float32(radius)
+	x := float32(rect.X)
+	y := float32(rect.Y)
+	w := float32(rect.W)
+	h := float32(rect.H)
+
+	var path vector.Path
+	path.MoveTo(x+r, y)
+	path.LineTo(x+w-r, y)
+	path.QuadTo(x+w, y, x+w, y+r)
+	path.LineTo(x+w, y+h-r)
+	path.QuadTo(x+w, y+h, x+w-r, y+h)
+	path.LineTo(x+r, y+h)
+	path.QuadTo(x, y+h, x, y+h-r)
+	path.LineTo(x, y+r)
+	path.QuadTo(x, y, x+r, y)
+	path.Close()
+
+	var colorScale ebiten.ColorScale
+	colorScale.ScaleWithColor(clr)
+	vector.FillPath(dst, &path, &vector.FillOptions{}, &vector.DrawPathOptions{
+		AntiAlias:  true,
+		ColorScale: colorScale,
+	})
+}
+
+func destinationInBlend() ebiten.Blend {
+	return ebiten.Blend{
+		BlendFactorSourceRGB:        ebiten.BlendFactorZero,
+		BlendFactorSourceAlpha:      ebiten.BlendFactorZero,
+		BlendFactorDestinationRGB:   ebiten.BlendFactorSourceAlpha,
+		BlendFactorDestinationAlpha: ebiten.BlendFactorSourceAlpha,
+		BlendOperationRGB:           ebiten.BlendOperationAdd,
+		BlendOperationAlpha:         ebiten.BlendOperationAdd,
+	}
 }
 
 func mustLoadControlFaceSource() *text.GoTextFaceSource {
@@ -224,40 +322,58 @@ func clicked(rect Rect, mouseX, mouseY int) bool {
 }
 
 func firstMissionRect() Rect {
-	return Rect{X: float64(screenWidth/2 - cardWidth/2 - 700), Y: float64(screenHeight/2 - cardHeight/2 - 350), W: cardWidth, H: cardHeight}
+	return Rect{X: float64(screenWidth/2 - missionCardWidth/2 - 700), Y: float64(screenHeight/2 - missionCardHeight/2 - 350), W: missionCardWidth, H: missionCardHeight}
 }
 
 func secondMissionRect() Rect {
-	return Rect{X: float64(screenWidth/2 - cardWidth/2 - 700), Y: float64(screenHeight/2 - cardHeight/2), W: cardWidth, H: cardHeight}
+	return Rect{X: float64(screenWidth/2 - missionCardWidth/2 - 700), Y: float64(screenHeight/2 - missionCardHeight/2), W: missionCardWidth, H: missionCardHeight}
 }
 
 func thirdMissionRect() Rect {
-	return Rect{X: float64(screenWidth/2 - cardWidth/2 - 700), Y: float64(screenHeight/2 - cardHeight/2 + 350), W: cardWidth, H: cardHeight}
+	return Rect{X: float64(screenWidth/2 - missionCardWidth/2 - 700), Y: float64(screenHeight/2 - missionCardHeight/2 + 350), W: missionCardWidth, H: missionCardHeight}
 }
 
 func nextTurnButton() Rect {
-	return Rect{X: 1490, Y: 440, W: 330, H: 82}
+	return rightControlRect(330, 440, 82)
 }
 
 func backButton() Rect {
-	return Rect{X: 1560, Y: 590, W: 160, H: 74}
+	return rightControlRect(200, 590, 74)
 }
 
 func shuffleButton() Rect {
-	return Rect{X: 1550, Y: 790, W: 200, H: 60}
+	return rightControlRect(260, 790, 60)
 }
 
 func restartButton() Rect {
-	return Rect{X: 1550, Y: 890, W: 200, H: 60}
+	return rightControlRect(220, 890, 60)
 }
 
-func Run() error {
-	game, err := newGame()
+func shortcutHintRect() Rect {
+	return Rect{X: 385, Y: 1006, W: 1150, H: 42}
+}
+
+func rightControlRect(width, y, height float64) Rect {
+	const centerX = 1650
+	return Rect{X: centerX - width/2, Y: y, W: width, H: height}
+}
+
+func Run(languageValue string) error {
+	language, err := normalizeLanguage(languageValue)
+	if err != nil {
+		return err
+	}
+	if languageValue == "" {
+		language = defaultLanguage()
+	}
+
+	game, err := newGame(language)
 	if err != nil {
 		return err
 	}
 
 	ebiten.SetWindowSize(1280, 720)
-	ebiten.SetWindowTitle("Paper Quarters")
+	ebiten.SetWindowTitle(game.text.windowTitle)
+	ebiten.SetFullscreen(true)
 	return ebiten.RunGame(game)
 }
