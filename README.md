@@ -38,6 +38,16 @@ Browser:
 make browser
 ```
 
+Docker:
+
+```bash
+docker build -t paper-quarters .
+docker run --rm -p 8080:8080 paper-quarters
+```
+
+Then open `http://localhost:8080/` in a browser. English UI is available at
+`http://localhost:8080/?lang=eng`.
+
 English UI:
 
 ```bash

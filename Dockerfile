@@ -9,14 +9,17 @@ RUN go mod download
 
 COPY . .
 
-ARG GOOS=windows
-ARG GOARCH=amd64
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /out/app/serve ./cmd/serve
+RUN CGO_ENABLED=0 GOOS=js GOARCH=wasm go build -o /out/app/web/paper_quarters.wasm ./cmd/paper-quarters
+RUN cp "$(go env GOROOT)/lib/wasm/wasm_exec.js" /out/app/web/wasm_exec.js
+RUN cp web/index.html /out/app/web/index.html
 
-RUN CGO_ENABLED=0 GOOS=${GOOS} GOARCH=${GOARCH} go build -o /out/desktop/paper_quarters.exe ./cmd/paper-quarters
-RUN CGO_ENABLED=0 GOOS=js GOARCH=wasm go build -o /out/web/paper_quarters.wasm ./cmd/paper-quarters
-RUN cp "$(go env GOROOT)/lib/wasm/wasm_exec.js" /out/web/wasm_exec.js
-RUN cp web/index.html /out/web/index.html
+FROM debian:bookworm-slim AS runtime
 
-FROM scratch AS export
+WORKDIR /app
 
-COPY --from=build /out/ /
+COPY --from=build /out/app/ /app/
+
+EXPOSE 8080
+
+CMD ["/app/serve", "-addr", "0.0.0.0:8080", "-open=false", "-dir", "/app/web"]
